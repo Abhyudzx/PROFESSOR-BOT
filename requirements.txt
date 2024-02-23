@@ -18,6 +18,7 @@ youtube-search-python
 youtube-search
 yt-dlp==2023.2.17
 youtube-dl
+pytube
 
 #---imdb---#
 cinemagoer==2023.5.1
