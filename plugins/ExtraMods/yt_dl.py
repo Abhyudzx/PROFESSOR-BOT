@@ -35,5 +35,4 @@ async def download_youtube_video(client, message):
     else:
         await message.reply("Could not find a suitable stream to download. Please try a different video or quality.")
 
-# Run the bot
-app.run()
+
