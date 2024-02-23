@@ -5,18 +5,18 @@ import re
 
 # Exact Code
 
-@app.on_message(filters.command(["yt", "youtube"]))
+@Client.on_message(filters.command(["yt", "youtube"]))
 async def start(client, message):
     await message.reply("Welcome! Send me a YouTube link, and reply to my message with the desired quality (e.g., '720p', 'best', 'worst').")
 
-@app.on_message(filters.text & filters.regex(r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+'))
+@Client.on_message(filters.text & filters.regex(r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+'))
 async def handle_link(client, message):
     yt_link = message.text
     chat_id = message.chat.id
     await message.reply("Received your link! Please reply with the desired quality (e.g., '720p', '480p', 'best', 'worst').", quote=True)
 
     # Wait for quality reply
-    @app.on_message(filters.text & filters.reply & filters.user(chat_id))
+    @Client.on_message(filters.text & filters.reply & filters.user(chat_id))
     async def download_video(client, message):
         quality = message.text
         temp_file_name = f"{chat_id}_video.mp4"
