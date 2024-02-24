@@ -2,34 +2,36 @@ from pyrogram import Client, filters
 from pytube import YouTube
 import os
 
+# Use your own values here
 
 
-@Client.on_message(filters.command(["yt"]))
+# Create the client and connect
+
+@Client.on_message(filters.command(["yt", "youtube"]))
 async def start(client, message):
-    await message.reply("Welcome! Send me a YouTube link, and I will provide you with quality options for download.")
+    await message.reply("Welcome! Send me a YouTube link, and I'll download it for you. Reply to this message with the desired quality (e.g., '720p', '1080p').")
 
-@Client.on_message(filters.regex(r'(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu.be/)[^\s]{11}'))
-async def send_qualities(client, message):
+@Client.on_message(filters.text & filters.regex(r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+'))
+async def download_youtube_video(client, message):
     url = message.text
     yt = YouTube(url)
-    stream_qualities = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution')
-    qualities = [f"{stream.resolution}" for stream in stream_qualities]
-    unique_qualities = sorted(set(qualities), reverse=True)
-    await message.reply("Available qualities:\n" + "\n".join(unique_qualities) + "\nReply with the desired quality.")
-
-@Client.on_message(filters.text & filters.incoming)
-async def download_send_video(client, message):
-    if message.reply_to_message and "Available qualities:" in message.reply_to_message.text:
-        requested_quality = message.text
-        url = message.reply_to_message.entities[0].url if message.reply_to_message.entities else message.reply_to_message.text.split('\n')[0]
-        yt = YouTube(url)
-        stream = yt.streams.filter(res=requested_quality, progressive=True, file_extension='mp4').first()
-        if stream:
-            temp_file_path = stream.download()
-            await client.send_video(message.chat.id, video=temp_file_path, caption=f"Here's your video: {yt.title}")
-            os.remove(temp_file_path)
-        else:
-            await message.reply("The requested quality is not available. Please choose another quality.")
+    stream = None
+    
+    # Assuming the user wants the highest resolution available
+    # Modify this part to allow the user to choose a specific resolution
+    stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+    
+    if stream:
+        download_message = await message.reply("Downloading video, please wait...")
+        file_path = stream.download()
+        file_name = os.path.basename(file_path)
+        
+        await download_message.edit("Uploading video...")
+        await client.send_video(message.chat.id, video=file_path, caption=f"Here's your video: {yt.title}")
+        
+        # Clean up after sending the video
+        os.remove(file_path)
+        await download_message.delete()
     else:
-        await message.reply("Please reply to the message with available qualities to select the desired quality.")
+        await message.reply("Could not find a suitable stream to download. Please try a different video or quality.")
 
