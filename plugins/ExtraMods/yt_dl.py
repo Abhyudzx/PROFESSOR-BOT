@@ -2,36 +2,32 @@ from pyrogram import Client, filters
 from pytube import YouTube
 import os
 
-# Use your own values here
 
 
-# Create the client and connect
 
-@Client.on_message(filters.command(["yt", "youtube"]))
+@Client.on_message(filters.command(["yt"]))
 async def start(client, message):
-    await message.reply("Welcome! Send me a YouTube link, and I'll download it for you. Reply to this message with the desired quality (e.g., '720p', '1080p').")
+    await message.reply("Welcome! Send me a YouTube link, and I will download the video in the highest available quality for you.")
 
-@Client.on_message(filters.text & filters.regex(r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+'))
-async def download_youtube_video(client, message):
+@Client.on_message(filters.regex(r'(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu.be/)[^\s]{11}'))
+async def download_send_video(client, message):
     url = message.text
     yt = YouTube(url)
-    stream = None
-    
-    # Assuming the user wants the highest resolution available
-    # Modify this part to allow the user to choose a specific resolution
+
+    # Get the highest resolution video that includes both audio and video
     stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
     
     if stream:
-        download_message = await message.reply("Downloading video, please wait...")
-        file_path = stream.download()
-        file_name = os.path.basename(file_path)
+        msg = await message.reply("Downloading video in the highest quality, please wait...")
+        temp_file_path = stream.download()
+
+        try:
+            await msg.edit("Uploading video, please wait...")
+            await client.send_video(message.chat.id, video=temp_file_path, caption=f"Here's your video in the highest quality available: {yt.title}")
+        except Exception as e:
+            await msg.edit(f"Failed to upload video: {str(e)}")
         
-        await download_message.edit("Uploading video...")
-        await client.send_video(message.chat.id, video=file_path, caption=f"Here's your video: {yt.title}")
-        
-        # Clean up after sending the video
-        os.remove(file_path)
-        await download_message.delete()
+        os.remove(temp_file_path)
     else:
-        await message.reply("Could not find a suitable stream to download. Please try a different video or quality.")
+        await message.reply("Failed to download the video. The requested video might not be available in a progressive format that includes both audio and video.")
 
