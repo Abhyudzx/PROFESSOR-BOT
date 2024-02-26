@@ -6,7 +6,7 @@ aiohttp==3.8.3
 requests
 bs4==0.0.1
 mega.py
-
+zlib
 
 #---database---#
 pymongo==4.4.1
