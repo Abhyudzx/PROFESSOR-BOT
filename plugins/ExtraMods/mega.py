@@ -5,9 +5,10 @@ import os
 import math
 
 # Your Telegram API ID, API hash, and bot token from BotFather
-
+mega_email = 'abhyudbot@gmail.com'
+mega_password = 'Abhyudshiva7'
 mega = Mega()
-m = mega.login(abhyudbot@gmail.com, Abhyudshiva7)  # Login to Mega.nz
+m = mega.login()  # Login to Mega.nz
 
 def unzip_file(zip_path, extract_dir):
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
