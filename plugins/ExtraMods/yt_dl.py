@@ -1,47 +1,37 @@
 from pyrogram import Client, filters
-import yt_dlp
+from pytube import YouTube
 import os
 
-# Your Telegram API ID, API hash, and bot token from BotFather
+# Use your own values here
 
-def download_youtube_video(url, download_path="downloads/"):
-    ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
-        'outtmpl': download_path + '%(title)s.%(ext)s',
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info_dict = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info_dict)
-        return filename
 
-# Placeholder for a function to split large files into parts smaller than 2GB
-def split_file_into_parts(filename):
-    # This is a placeholder function. You need to implement the actual file splitting.
-    # The function should return a list of filenames for the parts.
-    return ["part1.mp4", "part2.mp4"]
+# Create the client and connect
 
-@Client.on_message(filters.command(["yt", "search"]))
-def send_welcome(client, message):
-    message.reply_text("Welcome! Send me a YouTube video link, and I'll download it for you. If the video is larger than 2GB, I'll split it into parts and upload them.")
+@Client.on_message(filters.command(["yt", "youtube"]))
+async def start(client, message):
+    await message.reply("Welcome! Send me a YouTube link, and I'll download it for you. Reply to this message with the desired quality (e.g., '720p', '1080p').")
 
-@Client.on_message(filters.text & ~filters.command)
-def handle_video_download(client, message):
+@Client.on_message(filters.text & filters.regex(r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+'))
+async def download_youtube_video(client, message):
     url = message.text
-    try:
-        message.reply_text("Downloading video... Please wait.")
-        filename = download_youtube_video(url)
-        filesize = os.path.getsize(filename)
-
-        if filesize > 2 * 1024 * 1024 * 1024:  # File is larger than 2GB
-            message.reply_text("The file is larger than 2GB. Splitting and uploading parts. It will take time...")
-            parts = split_file_into_parts(filename)
-            for part in parts:
-                message.reply_document(document=part)
-                os.remove(part)  # Clean up after uploading
-        else:
-            message.reply_document(document=filename)
+    yt = YouTube(url)
+    stream = None
+    
+    # Assuming the user wants the highest resolution available
+    # Modify this part to allow the user to choose a specific resolution
+    stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+    
+    if stream:
+        download_message = await message.reply("Downloading video, please wait...")
+        file_path = stream.download()
+        file_name = os.path.basename(file_path)
         
-        os.remove(filename)  # Clean up the original file if it's been split or already sent
-
-    except Exception as e:
-        message.reply_text(f"An error occurred: {str(e)}")
+        await download_message.edit("Uploading video...")
+        await client.send_video(message.chat.id, video=file_path, caption=f"Here's your video: {yt.title}")
+        
+        # Clean up after sending the video
+        os.remove(file_path)
+        await download_message.delete()
+    else:
+        await message.reply("Could not find a suitable stream to download. Please try a different video or quality.")
+        
