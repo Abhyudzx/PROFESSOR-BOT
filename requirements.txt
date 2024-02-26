@@ -7,6 +7,7 @@ requests
 bs4==0.0.1
 mega.py
 zlib
+filesplit
 
 #---database---#
 pymongo==4.4.1
