@@ -32,4 +32,4 @@ async def handle_link(client, message):
         except Exception as e:
             await message.reply(f"Failed to download: {str(e)}")
     else:
-        await message.reply("Please send a valid Mega.nz link.")
+        await message.reply("Please send a valid MG.")
